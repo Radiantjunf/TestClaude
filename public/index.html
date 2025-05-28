@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Holiday Chatbot</title>
+    <title>Chatbot de Férias</title>
     <style>
         * {
             margin: 0;
@@ -44,6 +44,25 @@
             color: white;
             padding: 20px;
             text-align: center;
+            position: relative;
+        }
+
+        .language-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+
+        .language-toggle:hover {
+            background: rgba(255,255,255,0.3);
         }
 
         .chat-header h1 {
@@ -82,6 +101,7 @@
             padding: 12px 16px;
             border-radius: 18px;
             word-wrap: break-word;
+            white-space: pre-line;
         }
 
         .message.user .message-content {
@@ -347,18 +367,19 @@
     <div class="container">
         <div class="chat-container">
             <div class="chat-header">
-                <h1>🏖️ Holiday Chatbot</h1>
-                <p>Manage employee holidays with natural language</p>
+                <button class="language-toggle" id="languageToggle">EN</button>
+                <h1 id="headerTitle">🏖️ Chatbot de Férias</h1>
+                <p id="headerSubtitle">Gerir férias de funcionários com linguagem natural</p>
             </div>
             
             <div class="chat-messages" id="chatMessages">
                 <div class="message bot">
-                    <div class="message-content">
-                        Welcome! I can help you manage holidays. Try saying something like:
+                    <div class="message-content" id="welcomeMessage">
+                        Bem-vindo! Posso ajudá-lo a gerir férias. Tente dizer algo como:
                         <br><br>
-                        "Hello, user1 wants to mark day 20 and 21 of July as holiday"
+                        "Olá, user1 quer marcar os dias 20 e 21 de julho como férias"
                         <br><br>
-                        Or ask me about existing holidays!
+                        Ou pergunte-me sobre férias existentes!
                     </div>
                 </div>
             </div>
@@ -371,10 +392,10 @@
                             type="text" 
                             class="chat-input" 
                             id="messageInput" 
-                            placeholder="Type your message... (use # to mention users)"
+                            placeholder="Digite a sua mensagem... (use # para mencionar utilizadores)"
                             autocomplete="off"
                         >
-                        <button type="submit" class="send-button" id="sendButton">Send</button>
+                        <button type="submit" class="send-button" id="sendButton">Enviar</button>
                     </form>
                 </div>
             </div>
@@ -382,29 +403,29 @@
 
         <div class="sidebar">
             <div class="sidebar-header">
-                <h2>📊 Database</h2>
+                <h2 id="sidebarTitle">📊 Base de Dados</h2>
             </div>
             
             <div class="sidebar-content">
                 <div class="section">
-                    <h3>👥 Users</h3>
+                    <h3 id="usersTitle">👥 Utilizadores</h3>
                     <div id="usersList"></div>
                 </div>
                 
                 <div class="section">
-                    <h3>🏖️ Holidays</h3>
+                    <h3 id="holidaysTitle">🏖️ Férias</h3>
                     <div id="holidaysList"></div>
                 </div>
 
                 <div class="examples">
-                    <h4>💡 Try these examples:</h4>
-                    <ul>
-                        <li>"#user1 wants holiday on July 25-26"</li>
-                        <li>"Show me all holidays in July"</li>
-                        <li>"What holidays does #user2 have?"</li>
-                        <li>"Approve holiday #1"</li>
-                        <li>"Who's on holiday next week?"</li>
-                        <li>Type # to see available users!</li>
+                    <h4 id="examplesTitle">💡 Experimente estes exemplos:</h4>
+                    <ul id="examplesList">
+                        <li>"#user1 quer férias nos dias 25-26 de julho"</li>
+                        <li>"Mostre-me todas as férias em julho"</li>
+                        <li>"Que férias tem o #user2?"</li>
+                        <li>"Aprovar férias #1"</li>
+                        <li>"Quem está de férias na próxima semana?"</li>
+                        <li>Digite # para ver utilizadores disponíveis!</li>
                     </ul>
                 </div>
             </div>
@@ -416,6 +437,61 @@
         let users = {};
         let selectedAutocompleteIndex = -1;
         let autocompleteVisible = false;
+        let currentLanguage = 'pt';
+
+        // Language translations
+        const translations = {
+            pt: {
+                title: "🏖️ Chatbot de Férias",
+                subtitle: "Gerir férias de funcionários com linguagem natural",
+                database: "📊 Base de Dados",
+                users: "👥 Utilizadores",
+                holidays: "🏖️ Férias",
+                examples: "💡 Experimente estes exemplos:",
+                placeholder: "Digite a sua mensagem... (use # para mencionar utilizadores)",
+                send: "Enviar",
+                sending: "A enviar...",
+                welcomeMessage: "Bem-vindo! Posso ajudá-lo a gerir férias. Tente dizer algo como:\n\n\"Olá, user1 quer marcar os dias 20 e 21 de julho como férias\"\n\nOu pergunte-me sobre férias existentes!",
+                examplesList: [
+                    "\"#user1 quer férias nos dias 25-26 de julho\"",
+                    "\"Mostre-me todas as férias em julho\"",
+                    "\"Que férias tem o #user2?\"",
+                    "\"Aprovar férias #1\"",
+                    "\"Quem está de férias na próxima semana?\"",
+                    "Digite # para ver utilizadores disponíveis!"
+                ],
+                noHolidays: "Não há férias registadas",
+                pending: "pendente",
+                approved: "aprovado",
+                rejected: "rejeitado",
+                holiday: "Férias"
+            },
+            en: {
+                title: "🏖️ Holiday Chatbot",
+                subtitle: "Manage employee holidays with natural language",
+                database: "📊 Database",
+                users: "👥 Users",
+                holidays: "🏖️ Holidays",
+                examples: "💡 Try these examples:",
+                placeholder: "Type your message... (use # to mention users)",
+                send: "Send",
+                sending: "Sending...",
+                welcomeMessage: "Welcome! I can help you manage holidays. Try saying something like:\n\n\"Hello, user1 wants to mark day 20 and 21 of July as holiday\"\n\nOr ask me about existing holidays!",
+                examplesList: [
+                    "\"#user1 wants holiday on July 25-26\"",
+                    "\"Show me all holidays in July\"",
+                    "\"What holidays does #user2 have?\"",
+                    "\"Approve holiday #1\"",
+                    "\"Who's on holiday next week?\"",
+                    "Type # to see available users!"
+                ],
+                noHolidays: "No holidays recorded",
+                pending: "pending",
+                approved: "approved",
+                rejected: "rejected",
+                holiday: "Holiday"
+            }
+        };
 
         // DOM elements
         const chatMessages = document.getElementById('chatMessages');
@@ -425,6 +501,17 @@
         const usersList = document.getElementById('usersList');
         const holidaysList = document.getElementById('holidaysList');
         const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+        const languageToggle = document.getElementById('languageToggle');
+
+        // Language elements
+        const headerTitle = document.getElementById('headerTitle');
+        const headerSubtitle = document.getElementById('headerSubtitle');
+        const sidebarTitle = document.getElementById('sidebarTitle');
+        const usersTitle = document.getElementById('usersTitle');
+        const holidaysTitle = document.getElementById('holidaysTitle');
+        const examplesTitle = document.getElementById('examplesTitle');
+        const examplesList = document.getElementById('examplesList');
+        const welcomeMessage = document.getElementById('welcomeMessage');
 
         // Load initial database state
         loadDatabase();
@@ -434,6 +521,38 @@
         messageInput.addEventListener('input', handleInput);
         messageInput.addEventListener('keydown', handleKeydown);
         document.addEventListener('click', hideAutocomplete);
+        languageToggle.addEventListener('click', toggleLanguage);
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'pt' ? 'en' : 'pt';
+            languageToggle.textContent = currentLanguage === 'pt' ? 'EN' : 'PT';
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            
+            headerTitle.textContent = t.title;
+            headerSubtitle.textContent = t.subtitle;
+            sidebarTitle.textContent = t.database;
+            usersTitle.textContent = t.users;
+            holidaysTitle.textContent = t.holidays;
+            examplesTitle.textContent = t.examples;
+            messageInput.placeholder = t.placeholder;
+            sendButton.textContent = isLoading ? t.sending : t.send;
+            welcomeMessage.textContent = t.welcomeMessage;
+            
+            // Update examples list
+            examplesList.innerHTML = '';
+            t.examplesList.forEach(example => {
+                const li = document.createElement('li');
+                li.textContent = example;
+                examplesList.appendChild(li);
+            });
+            
+            // Update holidays list status badges
+            updateHolidaysDisplay();
+        }
 
         function handleInput(e) {
             const value = e.target.value;
@@ -586,19 +705,22 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message }),
+                    body: JSON.stringify({ message, language: currentLanguage }),
                 });
 
                 const data = await response.json();
                 
                 if (data.error) {
-                    addMessage(`Error: ${data.error}`, 'bot');
+                    addMessage(`Erro: ${data.error}`, 'bot');
                 } else {
                     addMessage(data.response, 'bot');
                     updateDatabase(data.database);
                 }
             } catch (error) {
-                addMessage('Sorry, there was an error processing your request.', 'bot');
+                const errorMsg = currentLanguage === 'pt' 
+                    ? 'Desculpe, houve um erro ao processar o seu pedido.'
+                    : 'Sorry, there was an error processing your request.';
+                addMessage(errorMsg, 'bot');
                 console.error('Error:', error);
             } finally {
                 setLoading(false);
@@ -621,7 +743,8 @@
         function setLoading(loading) {
             isLoading = loading;
             sendButton.disabled = loading;
-            sendButton.textContent = loading ? 'Sending...' : 'Send';
+            const t = translations[currentLanguage];
+            sendButton.textContent = loading ? t.sending : t.send;
             
             if (loading) {
                 chatMessages.classList.add('loading');
@@ -657,18 +780,35 @@
             });
 
             // Update holidays list
+            updateHolidaysDisplay(data.holidays);
+        }
+
+        function updateHolidaysDisplay(holidays = null) {
+            if (!holidays) {
+                // Get holidays from current data
+                holidays = Array.from(holidaysList.children).map(card => {
+                    return JSON.parse(card.dataset.holiday || '{}');
+                });
+            }
+
+            const t = translations[currentLanguage];
+            
             holidaysList.innerHTML = '';
-            if (data.holidays.length === 0) {
-                holidaysList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center;">No holidays recorded</div>';
+            if (holidays.length === 0) {
+                holidaysList.innerHTML = `<div style="color: #666; font-style: italic; text-align: center;">${t.noHolidays}</div>`;
             } else {
-                data.holidays.forEach(holiday => {
+                holidays.forEach(holiday => {
                     const holidayCard = document.createElement('div');
                     holidayCard.className = `holiday-card ${holiday.status}`;
+                    holidayCard.dataset.holiday = JSON.stringify(holiday);
+                    
+                    const statusText = t[holiday.status] || holiday.status;
+                    
                     holidayCard.innerHTML = `
                         <div class="card-title">${holiday.userName || 'Unknown User'}</div>
                         <div class="card-subtitle">${holiday.startDate} to ${holiday.endDate}</div>
-                        <div class="card-subtitle">${holiday.reason || 'Holiday'}</div>
-                        <span class="status-badge status-${holiday.status}">${holiday.status}</span>
+                        <div class="card-subtitle">${holiday.reason || t.holiday}</div>
+                        <span class="status-badge status-${holiday.status}">${statusText}</span>
                     `;
                     holidaysList.appendChild(holidayCard);
                 });
@@ -677,6 +817,9 @@
 
         // Focus input on page load
         messageInput.focus();
+        
+        // Initialize language
+        updateLanguage();
     </script>
 </body>
 </html>

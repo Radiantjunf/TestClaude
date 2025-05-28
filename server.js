@@ -26,12 +26,44 @@ const anthropic = new Anthropic({
 
 console.log("✅ Claude API key loaded successfully");
 
+// Language translations
+const translations = {
+  en: {
+    systemPrompt: "You are a helpful assistant for managing employee holidays.",
+    availableUsers: "Available users:",
+    currentDate: "Current date:",
+    userMessage: "User message:",
+    holidayMarked: "Holiday has been marked successfully",
+    noHolidaysFound: "No holidays found",
+    holidayUpdated: "Holiday status updated successfully",
+    holidayDeleted: "Holiday deleted successfully",
+    invalidUser: "Invalid user ID",
+    invalidDate: "Invalid date format",
+    serverRunning: "Holiday Chatbot server running on",
+    setApiKey: "Make sure to set your CLAUDE_API_KEY in the .env file"
+  },
+  pt: {
+    systemPrompt: "És um assistente útil para gerir as férias dos funcionários.",
+    availableUsers: "Utilizadores disponíveis:",
+    currentDate: "Data atual:",
+    userMessage: "Mensagem do utilizador:",
+    holidayMarked: "Férias marcadas com sucesso",
+    noHolidaysFound: "Nenhumas férias encontradas",
+    holidayUpdated: "Estado das férias atualizado com sucesso",
+    holidayDeleted: "Férias eliminadas com sucesso",
+    invalidUser: "ID de utilizador inválido",
+    invalidDate: "Formato de data inválido",
+    serverRunning: "Servidor do Chatbot de Férias a funcionar em",
+    setApiKey: "Certifica-te de definir a tua CLAUDE_API_KEY no ficheiro .env"
+  }
+};
+
 // In-memory database
 const holidayDatabase = {
   users: {
-    user1: { name: "John Doe", department: "Engineering" },
-    user2: { name: "Jane Smith", department: "Marketing" },
-    user3: { name: "Bob Johnson", department: "Sales" },
+    user1: { name: "João Silva", department: "Engenharia" },
+    user2: { name: "Maria Santos", department: "Marketing" },
+    user3: { name: "Pedro Costa", department: "Vendas" },
   },
   holidays: [],
   nextId: 1,
@@ -39,14 +71,14 @@ const holidayDatabase = {
 
 // Database functions
 const dbFunctions = {
-  markHoliday: (userId, startDate, endDate, reason = "Holiday") => {
+  markHoliday: (userId, startDate, endDate, reason = "Férias") => {
     const holiday = {
       id: holidayDatabase.nextId++,
       userId: userId,
       startDate: startDate,
       endDate: endDate,
       reason: reason,
-      status: "pending",
+      status: "pendente",
       createdAt: new Date().toISOString(),
     };
 
@@ -61,7 +93,7 @@ const dbFunctions = {
   getAllHolidays: () => {
     return holidayDatabase.holidays.map((h) => ({
       ...h,
-      userName: holidayDatabase.users[h.userId]?.name || "Unknown User",
+      userName: holidayDatabase.users[h.userId]?.name || "Utilizador Desconhecido",
     }));
   },
 
@@ -72,7 +104,7 @@ const dbFunctions = {
       })
       .map((h) => ({
         ...h,
-        userName: holidayDatabase.users[h.userId]?.name || "Unknown User",
+        userName: holidayDatabase.users[h.userId]?.name || "Utilizador Desconhecido",
       }));
   },
 
@@ -94,29 +126,29 @@ const dbFunctions = {
   },
 };
 
-// Claude function definitions
+// Claude function definitions (language-agnostic)
 const tools = [
   {
     name: "mark_holiday",
-    description: "Mark holidays for a user",
+    description: "Mark holidays for a user / Marcar férias para um utilizador",
     input_schema: {
       type: "object",
       properties: {
         userId: {
           type: "string",
-          description: "The user ID (e.g., user1, user2)",
+          description: "The user ID (e.g., user1, user2) / ID do utilizador",
         },
         startDate: {
           type: "string",
-          description: "Start date in YYYY-MM-DD format",
+          description: "Start date in YYYY-MM-DD format / Data de início no formato YYYY-MM-DD",
         },
         endDate: {
           type: "string",
-          description: "End date in YYYY-MM-DD format",
+          description: "End date in YYYY-MM-DD format / Data de fim no formato YYYY-MM-DD",
         },
         reason: {
           type: "string",
-          description: "Reason for holiday (optional)",
+          description: "Reason for holiday (optional) / Motivo das férias (opcional)",
         },
       },
       required: ["userId", "startDate", "endDate"],
@@ -124,13 +156,13 @@ const tools = [
   },
   {
     name: "get_user_holidays",
-    description: "Get all holidays for a specific user",
+    description: "Get all holidays for a specific user / Obter todas as férias de um utilizador específico",
     input_schema: {
       type: "object",
       properties: {
         userId: {
           type: "string",
-          description: "The user ID",
+          description: "The user ID / ID do utilizador",
         },
       },
       required: ["userId"],
@@ -138,7 +170,7 @@ const tools = [
   },
   {
     name: "get_all_holidays",
-    description: "Get all holidays for all users",
+    description: "Get all holidays for all users / Obter todas as férias de todos os utilizadores",
     input_schema: {
       type: "object",
       properties: {},
@@ -147,17 +179,17 @@ const tools = [
   },
   {
     name: "get_holidays_by_date",
-    description: "Get holidays within a specific date range",
+    description: "Get holidays within a specific date range / Obter férias num intervalo de datas específico",
     input_schema: {
       type: "object",
       properties: {
         startDate: {
           type: "string",
-          description: "Start date in YYYY-MM-DD format",
+          description: "Start date in YYYY-MM-DD format / Data de início no formato YYYY-MM-DD",
         },
         endDate: {
           type: "string",
-          description: "End date in YYYY-MM-DD format",
+          description: "End date in YYYY-MM-DD format / Data de fim no formato YYYY-MM-DD",
         },
       },
       required: ["startDate", "endDate"],
@@ -165,17 +197,17 @@ const tools = [
   },
   {
     name: "update_holiday_status",
-    description: "Update the status of a holiday (approve, reject, etc.)",
+    description: "Update the status of a holiday / Atualizar o estado das férias",
     input_schema: {
       type: "object",
       properties: {
         holidayId: {
           type: "number",
-          description: "The holiday ID",
+          description: "The holiday ID / ID das férias",
         },
         status: {
           type: "string",
-          description: "New status (approved, rejected, pending)",
+          description: "New status (approved/aprovado, rejected/rejeitado, pending/pendente)",
         },
       },
       required: ["holidayId", "status"],
@@ -183,14 +215,51 @@ const tools = [
   },
 ];
 
+// Language detection function
+function detectLanguage(message) {
+  const portugueseKeywords = [
+    'férias', 'marcar', 'ver', 'consultar', 'aprovar', 'rejeitar', 'eliminar',
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+    'dia', 'semana', 'mês', 'ano', 'hoje', 'amanhã', 'ontem',
+    'bom', 'boa', 'olá', 'obrigado', 'obrigada', 'por favor'
+  ];
+  
+  const lowerMessage = message.toLowerCase();
+  const portugueseMatches = portugueseKeywords.filter(keyword => 
+    lowerMessage.includes(keyword)
+  ).length;
+  
+  return portugueseMatches > 0 ? 'pt' : 'en';
+}
+
 // Chat endpoint
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, language } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
+
+    // Detect language if not provided
+    const lang = language || detectLanguage(message);
+    const t = translations[lang] || translations.en;
+
+    const systemPrompt = `${t.systemPrompt}
+    
+${t.availableUsers} ${Object.entries(holidayDatabase.users)
+      .map(([id, user]) => `${id} (${user.name})`)
+      .join(", ")}
+
+${t.currentDate} ${new Date().toISOString().split("T")[0]}
+
+${lang === 'pt' ? 
+  'Responde sempre em português. Use os nomes portugueses para os estados: "pendente", "aprovado", "rejeitado".' :
+  'Always respond in English. Use English status names: "pending", "approved", "rejected".'
+}
+
+${t.userMessage} ${message}`;
 
     const response = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
@@ -199,15 +268,7 @@ app.post("/api/chat", async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `You are a helpful assistant for managing employee holidays. 
-          
-Available users: ${Object.entries(holidayDatabase.users)
-            .map(([id, user]) => `${id} (${user.name})`)
-            .join(", ")}
-
-Current date: ${new Date().toISOString().split("T")[0]}
-
-User message: ${message}`,
+          content: systemPrompt,
         },
       ],
     });
@@ -224,11 +285,13 @@ User message: ${message}`,
 
           switch (name) {
             case "mark_holiday":
+              // Translate default reason based on language
+              const defaultReason = lang === 'pt' ? 'Férias' : 'Holiday';
               result = dbFunctions.markHoliday(
                 input.userId,
                 input.startDate,
                 input.endDate,
-                input.reason
+                input.reason || defaultReason
               );
               break;
 
@@ -248,14 +311,24 @@ User message: ${message}`,
               break;
 
             case "update_holiday_status":
+              // Translate status if needed
+              let status = input.status;
+              if (lang === 'pt') {
+                const statusTranslations = {
+                  'approved': 'aprovado',
+                  'rejected': 'rejeitado',
+                  'pending': 'pendente'
+                };
+                status = statusTranslations[status] || status;
+              }
               result = dbFunctions.updateHolidayStatus(
                 input.holidayId,
-                input.status
+                status
               );
               break;
 
             default:
-              result = { error: "Unknown function" };
+              result = { error: lang === 'pt' ? 'Função desconhecida' : 'Unknown function' };
           }
 
           toolResults.push({
@@ -275,15 +348,7 @@ User message: ${message}`,
             content: [
               {
                 type: "text",
-                text: `You are a helpful assistant for managing employee holidays. 
-
-Available users: ${Object.entries(holidayDatabase.users)
-                  .map(([id, user]) => `${id} (${user.name})`)
-                  .join(", ")}
-
-Current date: ${new Date().toISOString().split("T")[0]}
-
-User message: ${message}`,
+                text: systemPrompt,
               },
             ],
           },
@@ -309,6 +374,7 @@ User message: ${message}`,
 
     res.json({
       response: finalResponse,
+      language: lang,
       database: {
         holidays: holidayDatabase.holidays,
         users: holidayDatabase.users,
@@ -325,14 +391,22 @@ app.get("/api/database", (req, res) => {
   res.json({
     holidays: holidayDatabase.holidays.map((h) => ({
       ...h,
-      userName: holidayDatabase.users[h.userId]?.name || "Unknown User",
+      userName: holidayDatabase.users[h.userId]?.name || "Utilizador Desconhecido",
     })),
     users: holidayDatabase.users,
   });
 });
 
+// Language endpoint
+app.get("/api/languages", (req, res) => {
+  res.json({
+    supported: ["en", "pt"],
+    translations: translations
+  });
+});
+
 // Start server
 app.listen(port, () => {
-  console.log(`Holiday Chatbot server running on http://localhost:${port}`);
-  console.log("Make sure to set your CLAUDE_API_KEY in the .env file");
+  console.log(`${translations.pt.serverRunning} http://localhost:${port}`);
+  console.log(translations.pt.setApiKey);
 });
