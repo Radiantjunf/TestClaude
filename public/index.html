@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            height: 80vh;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.bot {
+            align-items: flex-start;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            border: 1px solid #e9ecef;
+            color: #333;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            position: relative;
+        }
+
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #f8f9fa;
+        }
+
+        .autocomplete-item.selected {
+            background: #e3f2fd;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .user-details {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+
+        .send-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .user-card, .holiday-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .holiday-card {
+            border-left-color: #11998e;
+        }
+
+        .holiday-card.pending {
+            border-left-color: #ffa726;
+        }
+
+        .holiday-card.approved {
+            border-left-color: #66bb6a;
+        }
+
+        .holiday-card.rejected {
+            border-left-color: #ef5350;
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .card-subtitle {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .examples {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .examples h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .examples ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .examples li {
+            background: white;
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: 90vh;
+            }
+        }
+
+        .loading {
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>🏖️ Holiday Chatbot</h1>
+                <p>Manage employee holidays with natural language</p>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div class="message-content">
+                        Welcome! I can help you manage holidays. Try saying something like:
+                        <br><br>
+                        "Hello, user1 wants to mark day 20 and 21 of July as holiday"
+                        <br><br>
+                        Or ask me about existing holidays!
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="autocomplete-container">
+                    <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                    <form class="chat-input-form" id="chatForm">
+                        <input 
+                            type="text" 
+                            class="chat-input" 
+                            id="messageInput" 
+                            placeholder="Type your message... (use # to mention users)"
+                            autocomplete="off"
+                        >
+                        <button type="submit" class="send-button" id="sendButton">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>📊 Database</h2>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="section">
+                    <h3>👥 Users</h3>
+                    <div id="usersList"></div>
+                </div>
+                
+                <div class="section">
+                    <h3>🏖️ Holidays</h3>
+                    <div id="holidaysList"></div>
+                </div>
+
+                <div class="examples">
+                    <h4>💡 Try these examples:</h4>
+                    <ul>
+                        <li>"#user1 wants holiday on July 25-26"</li>
+                        <li>"Show me all holidays in July"</li>
+                        <li>"What holidays does #user2 have?"</li>
+                        <li>"Approve holiday #1"</li>
+                        <li>"Who's on holiday next week?"</li>
+                        <li>Type # to see available users!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoading = false;
+        let users = {};
+        let selectedAutocompleteIndex = -1;
+        let autocompleteVisible = false;
+
+        // DOM elements
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatForm = document.getElementById('chatForm');
+        const usersList = document.getElementById('usersList');
+        const holidaysList = document.getElementById('holidaysList');
+        const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+
+        // Load initial database state
+        loadDatabase();
+
+        // Event listeners
+        chatForm.addEventListener('submit', sendMessage);
+        messageInput.addEventListener('input', handleInput);
+        messageInput.addEventListener('keydown', handleKeydown);
+        document.addEventListener('click', hideAutocomplete);
+
+        function handleInput(e) {
+            const value = e.target.value;
+            const cursorPosition = e.target.selectionStart;
+            
+            // Find if there's a # before the cursor
+            const textBeforeCursor = value.substring(0, cursorPosition);
+            const hashIndex = textBeforeCursor.lastIndexOf('#');
+            
+            if (hashIndex !== -1) {
+                const searchTerm = textBeforeCursor.substring(hashIndex + 1);
+                // Only show autocomplete if # is at start of word or after space
+                const charBeforeHash = hashIndex > 0 ? textBeforeCursor[hashIndex - 1] : ' ';
+                
+                if (charBeforeHash === ' ' || hashIndex === 0) {
+                    showAutocomplete(searchTerm, hashIndex);
+                    return;
+                }
+            }
+            
+            hideAutocomplete();
+        }
+
+        function handleKeydown(e) {
+            if (!autocompleteVisible) return;
+            
+            const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+            
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
+                    updateAutocompleteSelection(items);
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
+                    updateAutocompleteSelection(items);
+                    break;
+                    
+                case 'Enter':
+                case 'Tab':
+                    if (selectedAutocompleteIndex >= 0) {
+                        e.preventDefault();
+                        selectAutocompleteItem(selectedAutocompleteIndex);
+                    }
+                    break;
+                    
+                case 'Escape':
+                    hideAutocomplete();
+                    break;
+            }
+        }
+
+        function showAutocomplete(searchTerm, hashIndex) {
+            const filteredUsers = Object.entries(users).filter(([userId, user]) => {
+                return userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       user.name.toLowerCase().includes(searchTerm.toLowerCase());
+            });
+
+            if (filteredUsers.length === 0) {
+                hideAutocomplete();
+                return;
+            }
+
+            autocompleteDropdown.innerHTML = '';
+            
+            filteredUsers.forEach(([userId, user], index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.innerHTML = `
+                    <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-details">${userId} • ${user.department}</div>
+                    </div>
+                `;
+                
+                item.addEventListener('click', () => selectAutocompleteItem(index));
+                autocompleteDropdown.appendChild(item);
+            });
+
+            selectedAutocompleteIndex = -1;
+            autocompleteVisible = true;
+            autocompleteDropdown.style.display = 'block';
+            
+            // Store the hash position for later use
+            autocompleteDropdown.dataset.hashIndex = hashIndex;
+            autocompleteDropdown.dataset.searchTerm = searchTerm;
+        }
+
+        function updateAutocompleteSelection(items) {
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === selectedAutocompleteIndex);
+            });
+        }
+
+        function selectAutocompleteItem(index) {
+            const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+            if (index >= 0 && index < items.length) {
+                const selectedItem = items[index];
+                const userDetails = selectedItem.querySelector('.user-details').textContent;
+                const userId = userDetails.split(' • ')[0];
+                
+                // Replace the # and search term with the selected user
+                const hashIndex = parseInt(autocompleteDropdown.dataset.hashIndex);
+                const searchTerm = autocompleteDropdown.dataset.searchTerm;
+                const currentValue = messageInput.value;
+                
+                const beforeHash = currentValue.substring(0, hashIndex);
+                const afterSearch = currentValue.substring(hashIndex + 1 + searchTerm.length);
+                
+                messageInput.value = beforeHash + userId + afterSearch;
+                
+                // Position cursor after the inserted user ID
+                const newCursorPosition = hashIndex + userId.length;
+                messageInput.setSelectionRange(newCursorPosition, newCursorPosition);
+                
+                hideAutocomplete();
+                messageInput.focus();
+            }
+        }
+
+        function hideAutocomplete() {
+            autocompleteVisible = false;
+            autocompleteDropdown.style.display = 'none';
+            selectedAutocompleteIndex = -1;
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message || isLoading) return;
+
+            // Hide autocomplete if visible
+            hideAutocomplete();
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            messageInput.value = '';
+            
+            // Set loading state
+            setLoading(true);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, 'bot');
+                } else {
+                    addMessage(data.response, 'bot');
+                    updateDatabase(data.database);
+                }
+            } catch (error) {
+                addMessage('Sorry, there was an error processing your request.', 'bot');
+                console.error('Error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function addMessage(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function setLoading(loading) {
+            isLoading = loading;
+            sendButton.disabled = loading;
+            sendButton.textContent = loading ? 'Sending...' : 'Send';
+            
+            if (loading) {
+                chatMessages.classList.add('loading');
+            } else {
+                chatMessages.classList.remove('loading');
+            }
+        }
+
+        async function loadDatabase() {
+            try {
+                const response = await fetch('/api/database');
+                const data = await response.json();
+                updateDatabase(data);
+            } catch (error) {
+                console.error('Error loading database:', error);
+            }
+        }
+
+        function updateDatabase(data) {
+            // Store users globally for autocomplete
+            users = data.users;
+
+            // Update users list
+            usersList.innerHTML = '';
+            Object.entries(data.users).forEach(([id, user]) => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.innerHTML = `
+                    <div class="card-title">${user.name}</div>
+                    <div class="card-subtitle">ID: ${id} • ${user.department}</div>
+                `;
+                usersList.appendChild(userCard);
+            });
+
+            // Update holidays list
+            holidaysList.innerHTML = '';
+            if (data.holidays.length === 0) {
+                holidaysList.innerHTML = '<div style="color: #666; font-style: italic; text-align: center;">No holidays recorded</div>';
+            } else {
+                data.holidays.forEach(holiday => {
+                    const holidayCard = document.createElement('div');
+                    holidayCard.className = `holiday-card ${holiday.status}`;
+                    holidayCard.innerHTML = `
+                        <div class="card-title">${holiday.userName || 'Unknown User'}</div>
+                        <div class="card-subtitle">${holiday.startDate} to ${holiday.endDate}</div>
+                        <div class="card-subtitle">${holiday.reason || 'Holiday'}</div>
+                        <span class="status-badge status-${holiday.status}">${holiday.status}</span>
+                    `;
+                    holidaysList.appendChild(holidayCard);
+                });
+            }
+        }
+
+        // Focus input on page load
+        messageInput.focus();
+    </script>
+</body>
+</html>
